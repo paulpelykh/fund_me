@@ -9,21 +9,20 @@ error NotOwner();
 contract FundMe {
     using PriceConverter for uint256;
 
+    mapping(address => uint256) public addressToAmountFunded;    
+    address[] public funders;
+
+    address public immutable i_owner;
     uint256 public constant MINIMUM_USD = 5e18;
 
-    address[] public funders;
-    mapping(address => uint256) public addressToAmountFunded;
+    constructor() {
+        i_owner = msg.sender;
+    }
 
     function fund() public payable {
         require(msg.value.getConversionRate() >= MINIMUM_USD, "Didn't send enough ETH");
         funders.push(msg.sender);
         addressToAmountFunded[msg.sender] += msg.value;
-    }
-
-    address public immutable i_owner;
-
-    constructor() {
-        i_owner = msg.sender;
     }
 
     function withdraw() public onlyOwner {
@@ -40,5 +39,13 @@ contract FundMe {
         require(msg.sender == i_owner, "Sender is not owner!");
         if (msg.sender != i_owner) revert NotOwner();
         _;
+    }
+
+    receive() external payable {
+        fund();
+    }
+
+    fallback() external payable {
+        fund();
     }
 }
